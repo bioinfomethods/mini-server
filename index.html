@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>mini-server test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 1.5em; max-width: 70em; }
+    label { display: block; margin: 0.6em 0 0.2em; font-weight: 600; }
+    input[type=text] { width: 100%; box-sizing: border-box; padding: 0.4em; font-family: monospace; }
+    .row { display: flex; gap: 1em; align-items: end; margin-top: 0.8em; }
+    button { padding: 0.5em 1.2em; }
+    #status { margin: 0.8em 0; }
+    .err { color: #b00; }
+    #igv { margin-top: 1em; border-top: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>mini-server test</h1>
+  <p>This page is served by mini-server itself. Paste the full path of a file on this computer
+    (for example a BAM, CRAM or bgzipped VCF) to check that it loads in igv.js.</p>
+
+  <label for="path">File path</label>
+  <input type="text" id="path" placeholder="/Users/me/data/sample.bam  or  C:\data\sample.bam  or  \\server\share\sample.bam">
+  <label for="index">Index path (optional: defaults to the file path plus .bai, .crai or .tbi)</label>
+  <input type="text" id="index">
+  <div class="row">
+    <div>
+      <label for="genome">Genome</label>
+      <select id="genome">
+        <option value="hg38">hg38</option>
+        <option value="hg19">hg19</option>
+      </select>
+    </div>
+    <button id="load">Load in IGV</button>
+  </div>
+  <div id="status"></div>
+  <div id="igv"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/igv@3.8.9/dist/igv.min.js"></script>
+  <script>
+    const statusEl = document.getElementById('status');
+    let browser = null;
+    let browserGenome = null;
+
+    function setStatus(text, isError) {
+      statusEl.textContent = text;
+      statusEl.className = isError ? 'err' : '';
+    }
+
+    // C:\data\x.bam -> /f/C%3A/data/x.bam ; \\server\share\x.bam -> /f//server/share/x.bam
+    function fileUrl(path) {
+      let p = path.trim().replace(/\\/g, '/');
+      if (/^[A-Za-z]:/.test(p)) p = '/' + p;
+      return location.origin + '/f' + p.split('/').map(encodeURIComponent).join('/');
+    }
+
+    function defaultIndex(path) {
+      const lower = path.toLowerCase();
+      if (lower.endsWith('.bam')) return path + '.bai';
+      if (lower.endsWith('.cram')) return path + '.crai';
+      if (lower.endsWith('.gz')) return path + '.tbi';
+      return null;
+    }
+
+    async function checkFile(url) {
+      const res = await fetch(url, { method: 'HEAD' });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
+    }
+
+    document.getElementById('load').addEventListener('click', async () => {
+      const path = document.getElementById('path').value.trim();
+      if (!path) { setStatus('Enter a file path first.', true); return; }
+      const indexPath = document.getElementById('index').value.trim() || defaultIndex(path);
+      const genome = document.getElementById('genome').value;
+      const track = { url: fileUrl(path), name: path.split(/[\\/]/).pop() };
+      if (indexPath) track.indexURL = fileUrl(indexPath);
+      else track.indexed = false;
+
+      try {
+        setStatus('Checking files…');
+        await checkFile(track.url);
+        if (track.indexURL) await checkFile(track.indexURL);
+        setStatus('Loading…');
+        if (!browser || browserGenome !== genome) {
+          if (browser) igv.removeBrowser(browser);
+          browser = await igv.createBrowser(document.getElementById('igv'), { genome });
+          browserGenome = genome;
+        }
+        await browser.loadTrack(track);
+        setStatus('Loaded ' + track.name);
+      } catch (e) {
+        setStatus('Failed: ' + (e.message || e), true);
+      }
+    });
+  </script>
+</body>
+</html>
