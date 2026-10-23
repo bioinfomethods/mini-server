@@ -68,6 +68,18 @@
       if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
     }
 
+    // Opened by double-clicking (file://) the page can't reach mini-server:
+    // file URLs would resolve to file:///f/..., and a file:// page's
+    // origin is "null", which mini-server refuses anyway.
+    const servedByMiniServer = location.protocol === 'http:';
+    if (!servedByMiniServer) {
+      statusEl.innerHTML = 'This page only works when mini-server serves it. Start mini-server, ' +
+        'then open <a href="http://127.0.0.1:60152/">http://127.0.0.1:60152/</a> ' +
+        '(or the address it prints, if you changed the port).';
+      statusEl.className = 'err';
+      document.getElementById('load').disabled = true;
+    }
+
     document.getElementById('load').addEventListener('click', async () => {
       const path = document.getElementById('path').value.trim();
       if (!path) { setStatus('Enter a file path first.', true); return; }
