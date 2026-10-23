@@ -94,3 +94,7 @@ python3 -m unittest discover -s tests -v
 
 Pushing a tag such as `v0.1.0` builds the release zip and publishes a
 GitHub release.
+
+## License
+
+[Apache License 2.0](LICENSE)
