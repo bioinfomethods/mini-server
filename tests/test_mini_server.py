@@ -67,16 +67,18 @@ class ParseRangeTest(unittest.TestCase):
 
 class UrlPathTest(unittest.TestCase):
     def test_posix(self) -> None:
-        self.assertEqual(url_path_to_file_path("/Users/me/a%20b.bam", windows=False),
-                         "/Users/me/a b.bam")
+        self.assertEqual(
+            url_path_to_file_path("/Users/me/a%20b.bam", windows=False), "/Users/me/a b.bam"
+        )
         self.assertIsNone(url_path_to_file_path("relative.bam", windows=False))
         self.assertIsNone(url_path_to_file_path("/a%00b", windows=False))
 
     def test_windows(self) -> None:
         self.assertEqual(url_path_to_file_path("/C:/data/x.bam", windows=True), "C:/data/x.bam")
         self.assertEqual(url_path_to_file_path("/C%3A/data/x.bam", windows=True), "C:/data/x.bam")
-        self.assertEqual(url_path_to_file_path("//server/share/x.bam", windows=True),
-                         "//server/share/x.bam")
+        self.assertEqual(
+            url_path_to_file_path("//server/share/x.bam", windows=True), "//server/share/x.bam"
+        )
         self.assertIsNone(url_path_to_file_path("/data/x.bam", windows=True))
 
 
@@ -116,8 +118,9 @@ class ServerTest(unittest.TestCase):
         cls.server.server_close()
         cls.tmp.cleanup()
 
-    def request(self, method: str, path: str, headers: dict[str, str] | None = None,
-                host: str | None = None) -> tuple[int, dict[str, str], bytes]:
+    def request(
+        self, method: str, path: str, headers: dict[str, str] | None = None, host: str | None = None
+    ) -> tuple[int, dict[str, str], bytes]:
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
         try:
             all_headers = {"Host": host or f"127.0.0.1:{self.port}"}
@@ -150,7 +153,8 @@ class ServerTest(unittest.TestCase):
 
     def test_whole_file(self) -> None:
         status, headers, body = self.request(
-            "GET", self.file_path(self.root / "data" / "sample.bam"), {"Origin": ALLOWED})
+            "GET", self.file_path(self.root / "data" / "sample.bam"), {"Origin": ALLOWED}
+        )
         self.assertEqual(status, 200)
         self.assertEqual(body, self.content)
         self.assertEqual(headers["accept-ranges"], "bytes")
@@ -158,8 +162,10 @@ class ServerTest(unittest.TestCase):
 
     def test_range(self) -> None:
         status, headers, body = self.request(
-            "GET", self.file_path(self.root / "data" / "sample.bam"),
-            {"Origin": ALLOWED, "Range": "bytes=10-19"})
+            "GET",
+            self.file_path(self.root / "data" / "sample.bam"),
+            {"Origin": ALLOWED, "Range": "bytes=10-19"},
+        )
         self.assertEqual(status, 206)
         self.assertEqual(body, self.content[10:20])
         self.assertEqual(headers["content-range"], "bytes 10-19/1024")
@@ -167,27 +173,32 @@ class ServerTest(unittest.TestCase):
 
     def test_range_unsatisfiable(self) -> None:
         status, headers, _ = self.request(
-            "GET", self.file_path(self.root / "data" / "sample.bam"), {"Range": "bytes=5000-"})
+            "GET", self.file_path(self.root / "data" / "sample.bam"), {"Range": "bytes=5000-"}
+        )
         self.assertEqual(status, 416)
         self.assertEqual(headers["content-range"], "bytes */1024")
 
     def test_head(self) -> None:
         status, headers, body = self.request(
-            "HEAD", self.file_path(self.root / "data" / "sample.bam"))
+            "HEAD", self.file_path(self.root / "data" / "sample.bam")
+        )
         self.assertEqual(status, 200)
         self.assertEqual(headers["content-length"], "1024")
         self.assertEqual(body, b"")
 
     def test_disallowed_origin(self) -> None:
         status, headers, _ = self.request(
-            "GET", self.file_path(self.root / "data" / "sample.bam"),
-            {"Origin": "https://evil.example.com"})
+            "GET",
+            self.file_path(self.root / "data" / "sample.bam"),
+            {"Origin": "https://evil.example.com"},
+        )
         self.assertEqual(status, 403)
         self.assertNotIn("access-control-allow-origin", headers)
 
     def test_null_origin(self) -> None:
         status, _, _ = self.request(
-            "GET", self.file_path(self.root / "data" / "sample.bam"), {"Origin": "null"})
+            "GET", self.file_path(self.root / "data" / "sample.bam"), {"Origin": "null"}
+        )
         self.assertEqual(status, 403)
 
     def test_dns_rebinding_host(self) -> None:
@@ -200,7 +211,8 @@ class ServerTest(unittest.TestCase):
 
     def test_traversal(self) -> None:
         status, _, _ = self.request(
-            "GET", self.file_path((self.root / "data").as_posix() + "/../outside.bam"))
+            "GET", self.file_path((self.root / "data").as_posix() + "/../outside.bam")
+        )
         self.assertEqual(status, 403)
 
     def test_hidden(self) -> None:
@@ -212,7 +224,9 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(status, 403)
 
     def test_html_report_is_sandboxed(self) -> None:
-        status, headers, body = self.request("GET", self.file_path(self.root / "data" / "report.html"))
+        status, headers, body = self.request(
+            "GET", self.file_path(self.root / "data" / "report.html")
+        )
         self.assertEqual(status, 200)
         self.assertEqual(headers["content-type"], "text/html")
         self.assertTrue(headers["content-security-policy"].startswith("sandbox "))
@@ -231,25 +245,33 @@ class ServerTest(unittest.TestCase):
 
     def test_missing(self) -> None:
         status, headers, _ = self.request(
-            "GET", self.file_path(self.root / "data" / "missing.bam"), {"Origin": ALLOWED})
+            "GET", self.file_path(self.root / "data" / "missing.bam"), {"Origin": ALLOWED}
+        )
         self.assertEqual(status, 404)
         self.assertEqual(headers["access-control-allow-origin"], ALLOWED)
 
     def test_preflight(self) -> None:
-        status, headers, _ = self.request("OPTIONS", self.file_path(self.root / "data" / "sample.bam"), {
-            "Origin": ALLOWED,
-            "Access-Control-Request-Method": "GET",
-            "Access-Control-Request-Headers": "range",
-            "Access-Control-Request-Private-Network": "true",
-        })
+        status, headers, _ = self.request(
+            "OPTIONS",
+            self.file_path(self.root / "data" / "sample.bam"),
+            {
+                "Origin": ALLOWED,
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "range",
+                "Access-Control-Request-Private-Network": "true",
+            },
+        )
         self.assertEqual(status, 204)
         self.assertEqual(headers["access-control-allow-origin"], ALLOWED)
         self.assertEqual(headers["access-control-allow-headers"], "range")
         self.assertEqual(headers["access-control-allow-private-network"], "true")
 
     def test_preflight_disallowed(self) -> None:
-        status, _, _ = self.request("OPTIONS", "/health", {
-            "Origin": "https://evil.example.com", "Access-Control-Request-Method": "GET"})
+        status, _, _ = self.request(
+            "OPTIONS",
+            "/health",
+            {"Origin": "https://evil.example.com", "Access-Control-Request-Method": "GET"},
+        )
         self.assertEqual(status, 403)
 
 

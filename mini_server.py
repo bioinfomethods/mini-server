@@ -41,13 +41,51 @@ DEFAULT_CONFIG = {
     "allowed_origins": ["https://*.mcri.edu.au"],
     "roots": [],
     "allowed_extensions": [
-        ".bam", ".bai", ".cram", ".crai", ".csi", ".tbi", ".gzi",
-        ".vcf", ".vcf.gz", ".bcf", ".bed", ".bed.gz", ".bedpe", ".narrowpeak",
-        ".bw", ".bigwig", ".bb", ".bigbed", ".wig", ".bedgraph", ".tdf",
-        ".seg", ".seg.gz", ".gff", ".gff3", ".gff3.gz", ".gtf", ".gtf.gz",
-        ".fa", ".fasta", ".fa.gz", ".fasta.gz", ".fai", ".2bit",
+        ".bam",
+        ".bai",
+        ".cram",
+        ".crai",
+        ".csi",
+        ".tbi",
+        ".gzi",
+        ".vcf",
+        ".vcf.gz",
+        ".bcf",
+        ".bed",
+        ".bed.gz",
+        ".bedpe",
+        ".narrowpeak",
+        ".bw",
+        ".bigwig",
+        ".bb",
+        ".bigbed",
+        ".wig",
+        ".bedgraph",
+        ".tdf",
+        ".seg",
+        ".seg.gz",
+        ".gff",
+        ".gff3",
+        ".gff3.gz",
+        ".gtf",
+        ".gtf.gz",
+        ".fa",
+        ".fasta",
+        ".fa.gz",
+        ".fasta.gz",
+        ".fai",
+        ".2bit",
         # HTML reports and the files they typically load
-        ".html", ".htm", ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".pdf",
+        ".html",
+        ".htm",
+        ".css",
+        ".js",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".svg",
+        ".pdf",
     ],
 }
 
@@ -72,8 +110,10 @@ CONTENT_TYPES = {
 # origin instead, so their own requests arrive as Origin: null and are
 # refused. (Not PDFs: Chrome won't show a PDF in a sandboxed document.)
 SANDBOXED_TYPES = {"text/html", "image/svg+xml"}
-SANDBOX_POLICY = ("sandbox allow-scripts allow-forms allow-modals allow-popups "
-                  "allow-popups-to-escape-sandbox allow-downloads")
+SANDBOX_POLICY = (
+    "sandbox allow-scripts allow-forms allow-modals allow-popups "
+    "allow-popups-to-escape-sandbox allow-downloads"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -81,8 +121,9 @@ SANDBOX_POLICY = ("sandbox allow-scripts allow-forms allow-modals allow-popups "
 
 
 class Config:
-    def __init__(self, port: int, allowed_origins: list[str], roots: list[str],
-                 allowed_extensions: list[str]) -> None:
+    def __init__(
+        self, port: int, allowed_origins: list[str], roots: list[str], allowed_extensions: list[str]
+    ) -> None:
         self.port = port
         self.allowed_origins = allowed_origins
         self.origin_patterns = [OriginPattern(p) for p in allowed_origins]
@@ -285,8 +326,9 @@ class Handler(BaseHTTPRequestHandler):
         origin = self.headers.get("Origin")
         if origin is not None:
             self.send_header("Access-Control-Allow-Origin", origin)
-            self.send_header("Access-Control-Expose-Headers",
-                             "Content-Length, Content-Range, Accept-Ranges")
+            self.send_header(
+                "Access-Control-Expose-Headers", "Content-Length, Content-Range, Accept-Ranges"
+            )
         self.send_header("Vary", "Origin")
 
     def _send_file(self, url_path: str, send_body: bool) -> None:
@@ -321,8 +363,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(HTTPStatus.PARTIAL_CONTENT)
                 self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
             length = max(0, end - start + 1)
-            content_type = CONTENT_TYPES.get(os.path.splitext(real)[1].lower(),
-                                             "application/octet-stream")
+            content_type = CONTENT_TYPES.get(
+                os.path.splitext(real)[1].lower(), "application/octet-stream"
+            )
             self._send_cors_headers()
             self.send_header("Content-Type", content_type)
             if content_type in SANDBOXED_TYPES:
@@ -400,12 +443,18 @@ def make_server(config: Config, port: int | None = None) -> ThreadingHTTPServer:
 
 def main(argv: list[str] | None = None) -> int:
     if sys.version_info < MIN_PYTHON:
-        print(f"mini-server needs Python {'.'.join(map(str, MIN_PYTHON))} or later; "
-              f"this is {sys.version.split()[0]}.")
+        print(
+            f"mini-server needs Python {'.'.join(map(str, MIN_PYTHON))} or later; "
+            f"this is {sys.version.split()[0]}."
+        )
         return 1
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--config", type=Path, default=HERE / CONFIG_NAME,
-                        help=f"configuration file (default: {CONFIG_NAME} next to this script)")
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=HERE / CONFIG_NAME,
+        help=f"configuration file (default: {CONFIG_NAME} next to this script)",
+    )
     parser.add_argument("--port", type=int, help="override the configured port")
     args = parser.parse_args(argv)
 
