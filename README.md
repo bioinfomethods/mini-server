@@ -47,6 +47,11 @@ Files are addressed by their absolute path after `/f`:
 Percent-encode anything unusual in a path, and always encode `?`, `#` and `%`.
 Range requests, `HEAD` and CORS preflights are supported.
 
+HTML reports can be opened the same way, in a tab or an iframe, and load
+their own images, CSS and scripts by relative path. They run sandboxed (see
+Security), so a report that reads data files with `fetch()` won't work, nor
+will one that needs `localStorage` or cookies.
+
 `GET /health` returns `{"name": "mini-server", "version": "..."}`, so a page
 can detect whether mini-server is running.
 
@@ -54,12 +59,14 @@ can detect whether mini-server is running.
 
 `config.json` next to the script:
 
-| Key                  | Meaning                                                                                                                                                                   |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `port`               | Port to listen on (default `60152`).                                                                                                                                      |
-| `allowed_origins`    | Websites allowed to read files, e.g. `https://viewer.example.org`. A leading `*.` matches any subdomain (not the bare domain). Without a port, any port matches. |
-| `roots`              | If not empty, only files under these folders are served.                                                                                                                  |
-| `allowed_extensions` | If not empty, only files with these endings are served. The default list covers common genomics formats.                                                                  |
+- `port`: port to listen on (default `60152`).
+- `allowed_origins`: websites allowed to read files, e.g.
+  `https://viewer.example.org`. A leading `*.` matches any subdomain (not the
+  bare domain). Without a port, any port matches.
+- `roots`: if not empty, only files under these folders are served.
+- `allowed_extensions`: if not empty, only files with these endings are
+  served. The default list covers common genomics formats, plus HTML reports
+  and the image, CSS and script files they use.
 
 `python3 mini_server.py --port 8123` overrides the port for one run.
 
@@ -72,7 +79,9 @@ can detect whether mini-server is running.
   blocks DNS-rebinding attacks.
 - Read-only: `GET`, `HEAD` and `OPTIONS` only, and no directory listings.
 - Hidden files and folders (names starting with `.`, such as `~/.ssh`) are
-  never served, and by default only genomics file types are.
+  never served, and by default only genomics and report file types are.
+- HTML and SVG files are served with `Content-Security-Policy: sandbox`, so
+  their scripts can't use mini-server to read your other files.
 
 Any page on an allowed website can read the files mini-server allows, so
 keep `allowed_origins` to sites you trust, and consider setting `roots`.

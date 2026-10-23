@@ -46,8 +46,34 @@ DEFAULT_CONFIG = {
         ".bw", ".bigwig", ".bb", ".bigbed", ".wig", ".bedgraph", ".tdf",
         ".seg", ".seg.gz", ".gff", ".gff3", ".gff3.gz", ".gtf", ".gtf.gz",
         ".fa", ".fasta", ".fa.gz", ".fasta.gz", ".fai", ".2bit",
+        # HTML reports and the files they typically load
+        ".html", ".htm", ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".pdf",
     ],
 }
+
+# Types browsers need to display a file rather than download it. Anything
+# else is sent as application/octet-stream (mimetypes would be wrong here:
+# it calls .vcf a vCard).
+CONTENT_TYPES = {
+    ".html": "text/html",
+    ".htm": "text/html",
+    ".css": "text/css",
+    ".js": "text/javascript",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".svg": "image/svg+xml",
+    ".pdf": "application/pdf",
+}
+
+# Pages that can run script. Served from here they would share our origin
+# and so could read any file we serve; the sandbox gives them an opaque
+# origin instead, so their own requests arrive as Origin: null and are
+# refused. (Not PDFs: Chrome won't show a PDF in a sandboxed document.)
+SANDBOXED_TYPES = {"text/html", "image/svg+xml"}
+SANDBOX_POLICY = ("sandbox allow-scripts allow-forms allow-modals allow-popups "
+                  "allow-popups-to-escape-sandbox allow-downloads")
 
 
 # ---------------------------------------------------------------------------
@@ -295,8 +321,12 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_response(HTTPStatus.PARTIAL_CONTENT)
                 self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
             length = max(0, end - start + 1)
+            content_type = CONTENT_TYPES.get(os.path.splitext(real)[1].lower(),
+                                             "application/octet-stream")
             self._send_cors_headers()
-            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Type", content_type)
+            if content_type in SANDBOXED_TYPES:
+                self.send_header("Content-Security-Policy", SANDBOX_POLICY)
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Accept-Ranges", "bytes")
             self.send_header("Content-Length", str(length))

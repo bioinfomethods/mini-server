@@ -93,6 +93,8 @@ class ServerTest(unittest.TestCase):
         cls.content = bytes(range(256)) * 4  # 1024 bytes
         (root / "data" / "sample.bam").write_bytes(cls.content)
         (root / "data" / "notes.txt").write_text("secret")
+        (root / "data" / "report.html").write_text("<h1>report</h1>")
+        (root / "data" / "plot.png").write_bytes(b"\x89PNG")
         (root / ".hidden").mkdir()
         (root / ".hidden" / "x.bam").write_bytes(b"hidden")
         (root / "outside.bam").write_bytes(b"outside")
@@ -208,6 +210,24 @@ class ServerTest(unittest.TestCase):
     def test_extension_not_allowed(self) -> None:
         status, _, _ = self.request("GET", self.file_path(self.root / "data" / "notes.txt"))
         self.assertEqual(status, 403)
+
+    def test_html_report_is_sandboxed(self) -> None:
+        status, headers, body = self.request("GET", self.file_path(self.root / "data" / "report.html"))
+        self.assertEqual(status, 200)
+        self.assertEqual(headers["content-type"], "text/html")
+        self.assertTrue(headers["content-security-policy"].startswith("sandbox "))
+        self.assertNotIn("allow-same-origin", headers["content-security-policy"])
+        self.assertEqual(body, b"<h1>report</h1>")
+
+    def test_report_asset_type(self) -> None:
+        status, headers, _ = self.request("GET", self.file_path(self.root / "data" / "plot.png"))
+        self.assertEqual(status, 200)
+        self.assertEqual(headers["content-type"], "image/png")
+        self.assertNotIn("content-security-policy", headers)
+
+    def test_genomics_files_are_octet_stream(self) -> None:
+        _, headers, _ = self.request("HEAD", self.file_path(self.root / "data" / "sample.bam"))
+        self.assertEqual(headers["content-type"], "application/octet-stream")
 
     def test_missing(self) -> None:
         status, headers, _ = self.request(

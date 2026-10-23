@@ -7,6 +7,7 @@
     ".vcf", ".vcf.gz", ".bcf", ".bed", ".bed.gz", ".bedpe", ".narrowpeak",
     ".bw", ".bigwig", ".bb", ".bigbed", ".wig", ".bedgraph", ".tdf",
     ".seg", ".seg.gz", ".gff", ".gff3", ".gff3.gz", ".gtf", ".gtf.gz",
-    ".fa", ".fasta", ".fa.gz", ".fasta.gz", ".fai", ".2bit"
+    ".fa", ".fasta", ".fa.gz", ".fasta.gz", ".fai", ".2bit",
+    ".html", ".htm", ".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".pdf"
   ]
 }
