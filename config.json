@@ -4,7 +4,7 @@
   "roots": [],
   "allowed_extensions": [
     ".bam", ".bai", ".cram", ".crai", ".csi", ".tbi", ".gzi",
-    ".vcf", ".vcf.gz", ".bcf", ".bed", ".bed.gz", ".bedpe", ".narrowpeak",
+    ".vcf", ".vcf.gz", ".vcf.bgz", ".bcf", ".bed", ".bed.gz", ".bedpe", ".narrowpeak",
     ".bw", ".bigwig", ".bb", ".bigbed", ".wig", ".bedgraph", ".tdf",
     ".seg", ".seg.gz", ".gff", ".gff3", ".gff3.gz", ".gtf", ".gtf.gz",
     ".fa", ".fasta", ".fa.gz", ".fasta.gz", ".fai", ".2bit",

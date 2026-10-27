@@ -50,6 +50,7 @@ DEFAULT_CONFIG = {
         ".gzi",
         ".vcf",
         ".vcf.gz",
+        ".vcf.bgz",
         ".bcf",
         ".bed",
         ".bed.gz",
